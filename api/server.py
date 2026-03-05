@@ -55,10 +55,6 @@ app = FastAPI(
 )
 
 
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
-
 @app.get("/health", response_model=HealthResponse, tags=["ops"])
 def health() -> HealthResponse:
     """Return service liveness status."""
