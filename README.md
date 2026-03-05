@@ -43,23 +43,26 @@ Response
 
 The system exposes a simple HTTP API. A request flows through a LangGraph workflow that identifies the user’s intent, retrieves country data, and generates the final answer.
 
-
+```mermaid
+flowchart LR
     User["User / Client"] -->|HTTP Request| API["FastAPI Service"]
 
     API --> Graph["LangGraph Agent Workflow"]
 
-    Graph --> Intent["Intent Identification-->LLM Parser"]
+    Graph --> Intent["Intent Identification\nLLM Parser"]
 
-    Intent --> Tool["Country Data Tool-->REST Countries API"]
+    Intent --> Tool["Country Data Tool\nREST Countries API"]
 
     Tool --> Normalize["Data Normalization"]
 
-    Normalize --> Synth["Answer Synthesis-->LLM"]
+    Normalize --> Synth["Answer Synthesis\nLLM"]
 
     Synth --> API
 
     API -->|JSON Response| User
+```
 
+---
 
 # Low Level Design
 
@@ -69,21 +72,21 @@ The LangGraph workflow is composed of three nodes that operate on a shared state
 flowchart TD
     Start([Start])
 
-    Start --> ParseQuery["parse_query_node-->Extract country + fields"]
+    Start --> ParseQuery["parse_query_node\nExtract country + fields"]
 
     ParseQuery --> CheckError1{Error?}
 
     CheckError1 -->|Yes| End([End])
-    CheckError1 -->|No| CountryTool["country_tool_node-->Fetch REST Countries Data"]
+    CheckError1 -->|No| CountryTool["country_tool_node\nFetch REST Countries Data"]
 
     CountryTool --> CheckError2{Error?}
 
     CheckError2 -->|Yes| End
-    CheckError2 -->|No| Synth["answer_synthesizer-->Generate Answer"]
+    CheckError2 -->|No| Synth["answer_synthesizer\nGenerate Answer"]
 
     Synth --> End
 
-    End --> Result["Structured Result-->country, fields, data, answer"]
+    End --> Result["Structured Result\ncountry, fields, data, answer"]
 ```
 
 ---
