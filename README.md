@@ -226,3 +226,10 @@ Country name extraction depends on the LLM and may fail for ambiguous queries.
 The agent currently supports a limited set of country attributes.
 
 ---
+## Deployment
+
+The service is deployed on Render.
+
+Base URL:
+https://country-data-ai-agent.onrender.com
+
