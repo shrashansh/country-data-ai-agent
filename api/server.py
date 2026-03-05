@@ -2,6 +2,8 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from typing import Any, Dict
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -53,6 +55,11 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
+@app.get("/")
+def homepage():
+    return FileResponse("api/static/index.html")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["ops"])

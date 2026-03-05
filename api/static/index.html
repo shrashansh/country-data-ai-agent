@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Info AI Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 64px;
+    }
+
+    /* ── header ── */
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #58a6ff, #bc8cff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+    .header p { margin-top: 8px; color: #8b949e; font-size: 0.95rem; }
+
+    /* ── search card ── */
+    .card {
+      width: 100%;
+      max-width: 680px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 28px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #58a6ff; }
+    input::placeholder { color: #484f58; }
+
+    button {
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #238636, #2ea043);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    button:hover { opacity: 0.88; }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── suggestions ── */
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .chip {
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      cursor: pointer;
+      color: #8b949e;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .chip:hover { border-color: #58a6ff; color: #58a6ff; }
+
+    /* ── result area ── */
+    #result-wrap {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 24px;
+      display: none;
+      animation: fadeUp 0.35s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* answer banner */
+    .answer-banner {
+      background: linear-gradient(135deg, #161b22, #1c2128);
+      border: 1px solid #30363d;
+      border-left: 3px solid #58a6ff;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      font-size: 0.97rem;
+      line-height: 1.6;
+      color: #cdd9e5;
+    }
+
+    /* stat grid */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 14px 16px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e6edf3;
+      word-break: break-word;
+    }
+
+    /* raw json toggle */
+    .json-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #8b949e;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 8px;
+    }
+    .json-toggle:hover { color: #58a6ff; }
+    .arrow { transition: transform 0.2s; display: inline-block; }
+    .arrow.open { transform: rotate(90deg); }
+
+    pre#raw-json {
+      display: none;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #79c0ff;
+      animation: fadeUp 0.25s ease;
+    }
+
+    /* error state */
+    .error-box {
+      background: #2d1a1a;
+      border: 1px solid #7d2828;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: #f85149;
+      font-size: 0.9rem;
+    }
+
+    /* spinner */
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid #30363d;
+      border-top-color: #58a6ff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 24px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🌍 Country Info AI Agent</h1>
+    <p>Ask anything about a country — capital, population, area, timezones and more.</p>
+  </div>
+
+  <div class="card">
+    <div class="input-row">
+      <input id="question" placeholder="What is the capital and population of Brazil?" />
+      <button id="ask-btn" onclick="ask()">Ask</button>
+    </div>
+    <div class="suggestions">
+      <span class="chip" onclick="setQ(this)">Capital of Japan?</span>
+      <span class="chip" onclick="setQ(this)">Population &amp; area of India</span>
+      <span class="chip" onclick="setQ(this)">Timezones of Russia</span>
+      <span class="chip" onclick="setQ(this)">Currency of France</span>
+      <span class="chip" onclick="setQ(this)">Languages spoken in Canada</span>
+    </div>
+  </div>
+
+  <div class="spinner" id="spinner"></div>
+
+  <div id="result-wrap">
+    <div id="answer-area"></div>
+    <div class="json-toggle" onclick="toggleJson()">
+      <span class="arrow" id="arrow">▶</span> Raw JSON
+    </div>
+    <pre id="raw-json"></pre>
+  </div>
+
+  <script>
+    function setQ(el) {
+      document.getElementById('question').value = el.textContent;
+      document.getElementById('question').focus();
+    }
+
+    function toggleJson() {
+      const pre = document.getElementById('raw-json');
+      const arrow = document.getElementById('arrow');
+      const open = pre.style.display === 'block';
+      pre.style.display = open ? 'none' : 'block';
+      arrow.classList.toggle('open', !open);
+    }
+
+    const LABELS = {
+      country: 'Country', capital: 'Capital', population: 'Population',
+      area: 'Area (km²)', region: 'Region', subregion: 'Subregion',
+      timezones: 'Timezones', languages: 'Languages', currencies: 'Currencies',
+      flag: 'Flag', tld: 'TLD', independent: 'Independent',
+    };
+
+    function fmt(key, val) {
+      if (Array.isArray(val)) return val.join(', ');
+      if (typeof val === 'object' && val !== null) return Object.values(val).join(', ');
+      if (typeof val === 'number') return val.toLocaleString();
+      return String(val);
+    }
+
+    async function ask() {
+      const question = document.getElementById('question').value.trim();
+      if (!question) return;
+
+      const btn = document.getElementById('ask-btn');
+      const spinner = document.getElementById('spinner');
+      const wrap = document.getElementById('result-wrap');
+
+      btn.disabled = true;
+      spinner.style.display = 'block';
+      wrap.style.display = 'none';
+
+      try {
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question }),
+        });
+        const data = await res.json();
+
+        spinner.style.display = 'none';
+        wrap.style.display = 'block';
+
+        const area = document.getElementById('answer-area');
+        const rawPre = document.getElementById('raw-json');
+        document.getElementById('arrow').classList.remove('open');
+        rawPre.style.display = 'none';
+
+        if (!res.ok || data.error) {
+          area.innerHTML = `<div class="error-box">⚠️ ${data.error || 'Unknown error'}</div>`;
+          rawPre.textContent = '';
+          return;
+        }
+
+        // answer banner
+        let html = `<div class="answer-banner">${data.answer}</div>`;
+
+        // stat cards from data fields
+        const normalized = data.data || {};
+        const fields = data.fields || [];
+        if (fields.length) {
+          html += '<div class="stat-grid">';
+          fields.forEach((f, i) => {
+            if (normalized[f] !== undefined) {
+              const label = LABELS[f] || f.charAt(0).toUpperCase() + f.slice(1);
+              const value = fmt(f, normalized[f]);
+              html += `<div class="stat-card" style="animation-delay:${i * 0.06}s">
+                <div class="stat-label">${label}</div>
+                <div class="stat-value">${value}</div>
+              </div>`;
+            }
+          });
+          html += '</div>';
+        }
+
+        area.innerHTML = html;
+        rawPre.textContent = JSON.stringify(data, null, 2);
+
+      } catch (err) {
+        spinner.style.display = 'none';
+        wrap.style.display = 'block';
+        document.getElementById('answer-area').innerHTML =
+          `<div class="error-box">⚠️ Network error: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('question').addEventListener('keydown', e => {
+      if (e.key === 'Enter') ask();
+    });
+  </script>
+</body>
+</html>
